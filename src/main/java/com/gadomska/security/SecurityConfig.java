@@ -2,6 +2,7 @@ package com.gadomska.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.userdetails.User;
@@ -25,19 +26,29 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .password("admin1")
                 .roles("ADMIN")
                 .build();
+        UserDetails moderator = User.withDefaultPasswordEncoder()
+                .username("moderator")
+                .password("moderator1")
+                .roles("MODERATOR")
+                .build();
 
-        return new InMemoryUserDetailsManager(user, admin);
+        return new InMemoryUserDetailsManager(user, admin, moderator);
     }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
+                .httpBasic()
+                .and()
                 .authorizeRequests()
-                .antMatchers("/hello").permitAll()
-                .anyRequest().hasRole("ADMIN")
+                .antMatchers(HttpMethod.GET,"/api").permitAll()
+                .antMatchers(HttpMethod.POST,"/api").hasAnyRole("MODERATOR", "Admin")
+                .antMatchers(HttpMethod.DELETE,"/api").hasRole("ADMIN")
                 .and()
                 .formLogin().permitAll()
                 .and()
-                .logout().permitAll();
+                .logout().permitAll()
+                .and()
+                .csrf().disable();
     }
 }
